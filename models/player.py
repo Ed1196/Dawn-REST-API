@@ -22,19 +22,18 @@ class PlayerModel(db.Model):
     heldItem =      db.Column(db.String(10))
     strength =      db.Column(db.Integer)
     stamina =       db.Column(db.Integer)
-    currentLobby =  db.Column(db.Integer)
-
     # Items foreign key: This is the relationship between item and store
     # Foreign keys will prevent linked items from being deleted.
     # Every item will be linked to a store,
     currentLobby =        db.Column(db.Integer, db.ForeignKey('lobbies.lobbyId'))
+    lobby =               db.relationship('LobbyModel', foreign_keys = [currentLobby])
 
     homeId =              db.Column(db.Integer, db.ForeignKey('locations.id'))
     home =                db.relationship('LocationModel', foreign_keys = [homeId])
 
     
     # Equivalent of a join in sequel
-    lobby =               db.relationship('LobbyModel')
+    
 
     locationId =   db.Column(db.Integer, db.ForeignKey('locations.id'))    
     location =     db.relationship('LocationModel', foreign_keys = [locationId])

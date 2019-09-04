@@ -14,21 +14,21 @@ class CreateLobby(Resource):
     def post(self):
         playerName = current_identity.playerName
         player     = PlayerModel.findByPlayerName(playerName)
-        
+
         if(player.currentLobby == -1):
             newLobby = LobbyModel(player.playerName)
+            newLobby.save_to_db()
+            
             home     = LocationModel(player.playerName, 'home')
+            home.save_to_db()
+            
 
+            print('lobbyId', newLobby.lobbyId)
+            print('homeId', home.id)
             player.currentLobby = newLobby.lobbyId
             player.homeId       = home.id
-            player.locationId   = home.id
-
-            try:
-                newLobby.save_to_db()
-                home.save_to_db()
-                player.save_to_db()
-            except:
-                return {'message': 'Error saving to the DB!'}
+            player.locationId   = home.id 
+            player.save_to_db()
 
             return {'message': 'Lobby was created succesfully!'}
 
@@ -92,10 +92,10 @@ class Lobby(Resource):
         elif(player.currentLobby != -1):
             return {'message': 'You are part of a different lobby!'}
     
-        home = Loca
-        player.currentLobby = lobby_id
+        player.currentLobby = lobby.lobbyId
         lobby.lobbySize = lobby.lobbySize + 1
         player.save_to_db()
+        lobby.save_to_db()
         return {'message': 'You have succesfully joined the lobby!'}
     
 
