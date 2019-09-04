@@ -27,15 +27,21 @@ class PlayerModel(db.Model):
     # Items foreign key: This is the relationship between item and store
     # Foreign keys will prevent linked items from being deleted.
     # Every item will be linked to a store,
-    currentLobby = db.Column(db.Integer, db.ForeignKey('lobbies.lobbyId'))
-    currentLocation =     db.Column(db.String(10), db.ForeignKey('locations.locationName'))
+    currentLobby =        db.Column(db.Integer, db.ForeignKey('lobbies.lobbyId'))
+
+    homeId =              db.Column(db.Integer, db.ForeignKey('locations.id'))
+    home =                db.relationship('LocationModel', foreign_keys = [homeId])
+
+    
     # Equivalent of a join in sequel
-    lobby = db.relationship('LobbyModel')
-    location = db.relationship('LocationModel')
+    lobby =               db.relationship('LobbyModel')
+
+    locationId =   db.Column(db.Integer, db.ForeignKey('locations.id'))    
+    location =     db.relationship('LocationModel', foreign_keys = [locationId])
 
 
     # Initializes the item
-    def __init__(self, playername, secretKey, role, status, heldItem, location, strength, stamina):
+    def __init__(self, playername, secretKey, role, status, heldItem, strength, stamina):
         """ __init__ for PlayerModel Objects
 
             Will initialize a Player ModelObject with user's playername nad secretKey
@@ -54,15 +60,16 @@ class PlayerModel(db.Model):
                 currentLobby (int): Will keep track of the lobby that the player is part of   
 
         """
-        self.playerName     = playername
-        self.secretKey      = secretKey
-        self.role           = role
-        self.status         = status
-        self.heldItem       = heldItem
-        self.location       = location
-        self.strength       = strength
-        self.stamina        = stamina
-        self.currentLobby   = -1
+        self.playerName      = playername
+        self.secretKey       = secretKey
+        self.role            = role
+        self.status          = status
+        self.heldItem        = heldItem
+        self.strength        = strength
+        self.stamina         = stamina
+        self.currentLobby    = -1
+        self.homeId          = -1
+        self.locationId      = -1 
                  
     # Will return the item as a json/dictionary
     def json(self):
@@ -80,10 +87,11 @@ class PlayerModel(db.Model):
             'role'          : self.role,
             'status'        : self.status,
             'heldItem'      : self.heldItem,
-            'location'      : self.location,
             'strength'      : self.strength,
             'stamina'       : self.stamina,
-            'currentLobby'  : self.currentLobby
+            'currentLobby'  : self.currentLobby,
+            'homeId'        : self.homeId,
+            'locationId'    : self.locationId
         }
 
     # CREATING OR DELETING TO DATABASE

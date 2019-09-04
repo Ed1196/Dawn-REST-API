@@ -2,6 +2,7 @@ from flask_restful import Resource, reqparse
 from flask_jwt import jwt_required, current_identity
 from models.lobby import LobbyModel
 from models.player import PlayerModel
+from models.locations import LocationModel
 
 class CreateLobby(Resource):
     """Class use to handle game lobby creation endpoints.
@@ -12,13 +13,23 @@ class CreateLobby(Resource):
     @jwt_required()
     def post(self):
         playerName = current_identity.playerName
-        print(playerName)
-        player = PlayerModel.findByPlayerName(playerName)
+        player     = PlayerModel.findByPlayerName(playerName)
+        
         if(player.currentLobby == -1):
             newLobby = LobbyModel(player.playerName)
-            newLobby.save_to_db()
+            home     = LocationModel(player.playerName, 'home')
+
             player.currentLobby = newLobby.lobbyId
-            player.save_to_db()
+            player.homeId       = home.id
+            player.locationId   = home.id
+
+            try:
+                newLobby.save_to_db()
+                home.save_to_db()
+                player.save_to_db()
+            except:
+                return {'message': 'Error saving to the DB!'}
+
             return {'message': 'Lobby was created succesfully!'}
 
         return {'message': 'Lobby already exists!'}
@@ -81,6 +92,7 @@ class Lobby(Resource):
         elif(player.currentLobby != -1):
             return {'message': 'You are part of a different lobby!'}
     
+        home = Loca
         player.currentLobby = lobby_id
         lobby.lobbySize = lobby.lobbySize + 1
         player.save_to_db()
@@ -105,7 +117,6 @@ class Lobby(Resource):
 
         if(lobby.lobbyOwner == playerName):
             for player in players:
-                print(player.playerName)
                 player.currentLobby = -1
                 player.save_to_db()
 

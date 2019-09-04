@@ -1,5 +1,6 @@
 from flask_restful import Resource, reqparse
-from models.player import PlayerModel
+from models.player  import PlayerModel
+from models.locations import LocationModel
 
 class PlayerRegister(Resource):
     """ 
@@ -48,12 +49,12 @@ class PlayerRegister(Resource):
         if(PlayerModel.findByPlayerName(data['playerName'])):
             return {'message': 'User already exists!'}, 409 #Conflict
 
-        #: Object of type PlayerModel: Creates a player using the __init__ function from PlayerRegister
-        player = PlayerModel(data['playerName'], data['secretKey'], 'player', 'alive', 'none', 'home', 100, 100)
-
+        
         # Uses the PlayerRegister function save_to_db() function that uses SQLAlchemys save and commit to register the player
         # to the database
+        player = PlayerModel(data['playerName'], data['secretKey'], 'player', 'alive', 'none', 100, 100)
         player.save_to_db()
+        
 
         return {'message': 'Player was created succesfully!'}, 201
 
