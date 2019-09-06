@@ -9,15 +9,19 @@ class Location(Resource):
             __player_parse: Variable that will let us to  parse data from payload.
 
     """
-    __location_parser = reqparse.Request_Parser()
+    __location_parser = reqparse.RequestParser()
     __location_parser.add_argument(
         'owner',
         type=str,
         required=True,
         help='Player name needs to be provided!'
     )
-    def get(self, location_name):
+    
+    
+    @classmethod
+    def get(cls, location_id):
         """Class method: GET
+           Endpoint: /location
 
             Class method that handles GET requests for the Location Resource.
             Locations data retrieval is accomplished using owner string supplied in
@@ -31,17 +35,8 @@ class Location(Resource):
                         error message stating that the location was not found.
 
         """
-        data = Location.__location_parser.parse_args()
-        location = LocationModel.findByName(location_name, data['owner'])
+        location = LocationModel.findById(location_id)
         if location is not None:
             return location.json()
         return {'message': 'Location does not exists'}
-
-class LocationGenerator(Resource):
-    """ Class that will handle endpoint requests, this is the extenal representation of the location generator entity.
-
-        Attributes: 
-
-
-    """
    

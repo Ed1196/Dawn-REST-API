@@ -5,30 +5,66 @@ from models.player import PlayerModel
 from models.locations import LocationModel
 
 class CreateLobby(Resource):
-    """Class use to handle game lobby creation endpoints.
+    """Class use to handle game lobby creation endpoints. This is the external representation of the 
+        lobby entity. This is what other programmers will use to access our data.
 
     Attributes:
 
     """
     @jwt_required()
     def post(self):
+        """ Class method: POST  
+
+
+            Class method that will handle POST request for the CreateLobby Resource.
+            Users that will hit the '/create-lobby' will use this method. 
+
+            Attributes:
+            Return:
+                return a successful message that the Lobby has been created.
+                return an error message if the lobby could not be made
+
+        """
         playerName = current_identity.playerName
         player     = PlayerModel.findByPlayerName(playerName)
 
+        # Checks if the user creating the lobby isn't part of one already
         if(player.currentLobby == -1):
-            newLobby = LobbyModel(player.playerName)
-            newLobby.save_to_db()
-            
-            home     = LocationModel(player.playerName, 'home')
-            home.save_to_db()
-            
 
-            print('lobbyId', newLobby.lobbyId)
-            print('homeId', home.id)
-            player.currentLobby = newLobby.lobbyId
-            player.homeId       = home.id
-            player.locationId   = home.id 
-            player.save_to_db()
+            try:
+                newLobby            = LobbyModel(player.playerName)
+                newLobby.save_to_db()
+            except:
+                return {'message': 'Could not create lobby. Error with creating lobby.'}
+            
+            try:
+                home                = LocationModel(player.playerName, 'home')
+                home.save_to_db()
+            except:
+                return {'message': 'Could not create lobby. Error with creating player home.'}
+            
+            try:
+                player.currentLobby = newLobby.lobbyId
+                player.homeId       = home.id
+                player.locationId   = home.id 
+                player.save_to_db()
+            except:
+                return {'message': 'Could not create lobby. Error with setting player details'}
+
+            try:
+                clerkName=''.join(reversed(player.playerName))
+                secretKey=''.join(reversed(player.secretKey))
+
+                storeClerk =PlayerModel(clerkName, secretKey, 'npc', 'alive', 'none', 100, 100)
+                store = LocationModel(clerkName, 'store')
+                store.save_to_db()
+
+                storeClerk.homeId = store.id
+                storeClerk.locationId = store.id
+                storeClerk.currentLobby = player.currentLobby
+                storeClerk.save_to_db()
+            except:
+                return {'message': 'Could not create lobby. Error with creating clerk'}
 
             return {'message': 'Lobby was created succesfully!'}
 
@@ -36,12 +72,13 @@ class CreateLobby(Resource):
 
 
 class Lobby(Resource):
-    """Class use to handle game lobby access and lobby update endpoints.
+    """Class use to handle game lobby access and lobby update endpoints. This class is separate from
+        the CreateLobby resources as we can only join and not create lobbies in this endpoint.
 
     Attributes:
 
     """
-
+    #
     def get(self,lobby_id):
         """Class Method used for GET request for game lobby data.
 
@@ -53,15 +90,14 @@ class Lobby(Resource):
             error message, if lobby does not exists
 
         """
-        #: Object of type LobbyModel: Using SQLAlchemy this object will give
-        #    us access and allow us to manipulate the lobby object in the DB
+        #: Object of type LobbyModel: Using SQLAlchemy this object will give us access and allow us to manipulate the lobby object in the DB
         lobby = LobbyModel.findById(lobby_id)
         if lobby is not None:
             return lobby.json()
 
         return {'message': 'Lobby does not exist!'}
 
-    # Will let you join a lobby
+    # Post request to join a lobby.
     @jwt_required()
     def post(self, lobby_id):
         """Class Method used for POST request for game lobby data.
@@ -92,10 +128,22 @@ class Lobby(Resource):
         elif(player.currentLobby != -1):
             return {'message': 'You are part of a different lobby!'}
     
+        # sets playes lobbyId to the one he joined
         player.currentLobby = lobby.lobbyId
+        # Increases lobby size to account new player
         lobby.lobbySize = lobby.lobbySize + 1
-        player.save_to_db()
         lobby.save_to_db()
+        # Create a home for new player
+        home = LocationModel(player.playerName, 'home')
+        home.save_to_db()
+
+        player.locationId = home.id
+        player.homeId = home.id
+
+
+        player.save_to_db()
+        
+        
         return {'message': 'You have succesfully joined the lobby!'}
     
 
@@ -115,9 +163,12 @@ class Lobby(Resource):
         lobby = LobbyModel.findById(lobby_id)
         players = lobby.players.all()
 
+        # Will check if you are the owner of the lobby you are trying to delete.
         if(lobby.lobbyOwner == playerName):
             for player in players:
                 player.currentLobby = -1
+                player.homeId = -1
+                player.locationId = -1
                 player.save_to_db()
 
             lobby.delete_from_db()

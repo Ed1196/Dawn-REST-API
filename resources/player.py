@@ -1,6 +1,7 @@
 from flask_restful import Resource, reqparse
 from models.player  import PlayerModel
 from models.locations import LocationModel
+from flask_jwt import jwt_required, current_identity
 
 class PlayerRegister(Resource):
     """ 
@@ -28,7 +29,8 @@ class PlayerRegister(Resource):
     )
 
     def post(self):
-        """Class methods: POST
+        """ Class methods: POST
+            Endpoint: /player-register
 
             Class method that handles post requests for the PlayerRegister Resource.
             Using payload from the POST request, it will use the 'playerName' and 
@@ -79,7 +81,8 @@ class Player(Resource):
 
     @classmethod
     def get(cls, playerName):
-        """Class method: GET
+        """ Class method: GET
+            Endpoint: /player
 
             Class method that handles GET requests for the Player Resource.
             Player data retrieval is accomplished using player id supplied in
@@ -104,3 +107,107 @@ class Player(Resource):
             return player.json()
 
         return {'message': 'Player was not found!'}
+
+class PlayerLocation(Resource):
+    """This resource will handle game logic when it comes to a player wanting to change location.
+
+    Attributes:
+        __player_parse: Variable that will let us to  parse data from payload. 
+    """
+
+    parse = reqparse.RequestParser()
+    parse.add_argument(
+        'locationId',
+        type=int,
+        required = True,
+        help='Location must be provided!'
+
+    )
+
+    @jwt_required()
+    def get(self):
+        """ Class method: GET
+            Endpoint: /player-location
+
+            Will return a players current location details only if that player is authorized and part of a lobby.
+        """
+        player   = PlayerModel.findByPlayerId(current_identity.id)
+        if(player.locationId == -1):
+            return {'message': 'You are not currently part of a lobby!'}
+        location = LocationModel.findById(player.locationId)
+        return location.json()
+
+    @jwt_required()
+    def post(self):
+        """ Class method: POST
+            Endpoint: /player-location
+
+            Will change a players location depending on the id of the location they want to go. 
+            Error check must look for the following. If player is part of the lobby, 
+        """
+        data = PlayerLocation.parse.parse_args()
+        player = PlayerModel.findByPlayerId(current_identity.id)
+        
+
+        try:
+            player.locationId = data['locationId']
+            player.stamina    = player.stamina - 10
+            if(player.stamina == 0):
+                player.status = "sleep"
+                player.save_to_db()
+                return {'message': 'You are out of stamina and have fallen asleep!'}
+            player.save_to_db()
+        except:
+            return {'message': 'Error saving to the DB!'}
+
+        return {'message': 'You have succesfully changed locations.'}
+
+class PlayerAction(Resource):
+    """This resource will handle different player actions and will alter player stats as they make choices.
+
+        Attributes:
+            parse: Variable that will let us parse the data from the payload from the request body.
+    """ 
+
+    parse = reqparse.RequestParser()
+    parse.add_argument(
+        'action',
+        type=str,
+        required=True,
+        help='Action is required!'
+    )
+
+
+    @jwt_required()
+    def post(self):
+        """ Class method: POST
+            /action
+
+        """
+        data = PlayerAction.parse.parse_args()
+
+        if(data['action'] == 'sleep'):
+            player = PlayerModel.findByPlayerId(current_identity.id)
+            player.stamina = player.stamina + 10
+            player.save_to_db()
+            return {'message': 'You decided to sleep: +10 stamina'}
+        elif(data['action'] == 'workout'):
+            if(player.stamina == 0):
+                player.status = "sleep"
+                player.save_to_db()
+                return {'message': 'You are out of stamina and have fallen asleep!'}
+
+            player = PlayerModel.findByPlayerId(current_identity.id)
+            player.strength = player.strength + 10
+            player.stamina = player.stamina - 10
+            player.status = "sleep"
+            
+            player.save_to_db()
+            return {'message': 'You decided to sleep: +10 strength -10 stamina'}
+        else:
+            return {'message': 'Action is not supported!'}
+
+        
+
+
+

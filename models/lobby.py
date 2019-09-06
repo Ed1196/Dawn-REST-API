@@ -13,9 +13,9 @@ class LobbyModel(db.Model):
     """
     __tablename__ = 'lobbies'
 
-    lobbyId =       db.Column(db.Integer, primary_key=True)
-    lobbyOwner =    db.Column(db.String(10))
-    lobbySize =     db.Column(db.Integer)
+    lobbyId    =       db.Column(db.Integer, primary_key=True)
+    lobbyOwner =       db.Column(db.String(10))
+    lobbySize  =       db.Column(db.Integer)
 
      # Tells sqlAlchemy that there is a relationship with ItemModel
     # It is a list of ItemModel's since there is a many to one relationship
