@@ -53,9 +53,9 @@ class CreateLobby(Resource):
 
             try:
                 clerkName=''.join(reversed(player.playerName))
-                secretKey=''.join(reversed(player.secretKey))
+                clerkSecretKey=''.join(reversed(player.secretKey))
 
-                storeClerk =PlayerModel(clerkName, secretKey, 'npc', 'alive', 'none', 100, 100)
+                storeClerk =PlayerModel(clerkName, clerkSecretKey, 'npc', 'alive', 'none', 100, 100)
                 store = LocationModel(clerkName, 'store')
                 store.save_to_db()
 
@@ -65,6 +65,21 @@ class CreateLobby(Resource):
                 storeClerk.save_to_db()
             except:
                 return {'message': 'Could not create lobby. Error with creating clerk'}
+
+            try:
+                policeName='Chief Wiggum'
+                policeSecretKey='ralph'
+
+                gameCop =PlayerModel(policeName, policeSecretKey, 'npc', 'alive', 'gun', 100, 100)
+                policeStation = LocationModel(clerkName, 'station')
+                policeStation.save_to_db()
+
+                gameCop.homeId = policeStation.id
+                gameCop.locationId = policeStation.id
+                gameCop.currentLobby = player.currentLobby
+                gameCop.save_to_db()
+            except:
+                return {'message': 'Could not create lobby. Error with creating cop'}
 
             return {'message': 'Lobby was created succesfully!'}
 

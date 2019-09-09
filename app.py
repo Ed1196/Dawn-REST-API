@@ -3,7 +3,7 @@ from flask_restful import Resource, Api
 from flask_jwt import JWT, jwt_required 
 from security import authenticate, identity
 from datetime import timedelta
-from resources.player import PlayerRegister, Player, PlayerLocation, PlayerAction
+from resources.player import PlayerRegister, Player, PlayerLocation, PlayerAction, PlayerConfrontation
 from resources.lobby   import CreateLobby, Lobby
 from resources.locations import Location
 
@@ -76,6 +76,9 @@ api.add_resource(PlayerAction, '/action')
 
 # Location endpoints
 api.add_resource(Location, '/location/<int:location_id>')
+
+# Confrontation endpoint
+api.add_resource(PlayerConfrontation, '/confront')
 
 
 if __name__ == '__main__':

@@ -148,6 +148,8 @@ class PlayerLocation(Resource):
         data = PlayerLocation.parse.parse_args()
         player = PlayerModel.findByPlayerId(current_identity.id)
         
+        if(player.locationId == data['locationId']):
+            return {'message':'Already at that location.'}
 
         try:
             player.locationId = data['locationId']
@@ -161,6 +163,31 @@ class PlayerLocation(Resource):
             return {'message': 'Error saving to the DB!'}
 
         return {'message': 'You have succesfully changed locations.'}
+
+
+class PlayerConfrontation(Resource):
+    """ This resource will handle the player confrontation action and will alter player stats as they make choices.
+
+        Attributes:
+            parse: Variable that will let us parse the data from the payload from the request body.
+
+    """
+    parse = reqparse.RequestParser()
+    parse.add_argument(
+        'player',
+        type=str,
+        required=True,
+        help='No target was selected!'
+    )
+
+    @jwt_required()
+    def post(self):
+        data = PlayerConfrontation.parse.parse_args()
+        player = PlayerModel.findByPlayerId(current_identity.id)
+        enemy = PlayerModel.findByPlayerId(data['player'])
+        confrontation = player.confront(enemy.playerName)
+        return {'message':confrontation}
+
 
 class PlayerAction(Resource):
     """This resource will handle different player actions and will alter player stats as they make choices.
@@ -186,6 +213,7 @@ class PlayerAction(Resource):
         """
         data = PlayerAction.parse.parse_args()
 
+        
         if(data['action'] == 'sleep'):
             player = PlayerModel.findByPlayerId(current_identity.id)
             player.stamina = player.stamina + 10
@@ -206,6 +234,9 @@ class PlayerAction(Resource):
             return {'message': 'You decided to sleep: +10 strength -10 stamina'}
         else:
             return {'message': 'Action is not supported!'}
+
+
+
 
         
 

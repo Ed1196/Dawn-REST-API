@@ -172,5 +172,8 @@ class PlayerModel(db.Model):
         """
         return cls.query.all()
 
+    def confront(self, playerName):
+        return '{} will confront {}'.format(self.playerName, playerName)
+
 
 
