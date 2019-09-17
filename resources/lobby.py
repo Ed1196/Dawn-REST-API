@@ -55,7 +55,7 @@ class CreateLobby(Resource):
                 clerkName=''.join(reversed(player.playerName))
                 clerkSecretKey=''.join(reversed(player.secretKey))
 
-                storeClerk =PlayerModel(clerkName, clerkSecretKey, 'npc', 'alive', 'none', 100, 100)
+                storeClerk =PlayerModel(clerkName, clerkSecretKey, 'npc', 'none', 'none', 100, 100)
                 store = LocationModel(clerkName, 'store')
                 store.save_to_db()
 
@@ -70,7 +70,7 @@ class CreateLobby(Resource):
                 policeName='Chief Wiggum'
                 policeSecretKey='ralph'
 
-                gameCop =PlayerModel(policeName, policeSecretKey, 'npc', 'alive', 'gun', 100, 100)
+                gameCop =PlayerModel(policeName, policeSecretKey, 'npc', 'none', 'gun', 100, 100)
                 policeStation = LocationModel(clerkName, 'station')
                 policeStation.save_to_db()
 

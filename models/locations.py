@@ -50,6 +50,8 @@ class LocationModel(db.Model):
             'players'           : [player.json() for player in self.players.all()]
         }
 
+    
+
     def save_to_db(self):
         """ Will allow us to commit the changes of the changing object to the DB.
 

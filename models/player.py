@@ -1,5 +1,6 @@
 #db is the linker that will search for Models and map them to the database
 from db import db
+import numpy as np
 
 #We create a class Player 
 #   db.Model: will tell the sqlAlchemy that this file represents a sql table with respective columns and rows
@@ -172,8 +173,112 @@ class PlayerModel(db.Model):
         """
         return cls.query.all()
 
-    def confront(self, playerName):
-        return '{} will confront {}'.format(self.playerName, playerName)
+    def confront(self, target):
+        print(self.playerName)
+        selfPlayer = .5
+        targetPlayer = .5
+        players = [self.playerName, target.playerName]
+        
+        if(target.status == 'sleep'):
+            selfPlayer = .9
+            targetPlayer = .1
+            probabilities = [selfPlayer, targetPlayer]
+            winner = np.random.choice(players, p=probabilities)
+            return winner
+            
+        if(self.heldItem == 'gun' and targetPlayer.heldItem == 'gun'):
+            selfPlayer = .50
+            targetPlayer = .50
+
+        else:
+            if(self.heldItem == 'gun' ):
+                selfPlayer = .80
+                targetPlayer = .20
+               
+            if(target.heldItem == 'gun'):
+                selfPlayer = .20
+                targetPlayer = .80
+            
+
+        strengthDiff = self.strength - target.strength
+        print(strengthDiff)
+        # self.strength is stronger
+        if(strengthDiff < 0):
+            if(strengthDiff <= 10 ):
+                selfPlayer = selfPlayer - .1
+                targetPlayer = targetPlayer + .1
+            elif (strengthDiff <= 20 ):
+                selfPlayer = selfPlayer - .2
+                targetPlayer = targetPlayer + .2
+            elif(strengthDiff <= 30 ):
+                selfPlayer = selfPlayer - .3
+                targetPlayer = targetPlayer + .3
+            else:
+                selfPlayer = selfPlayer - .4
+                targetPlayer = targetPlayer + .4
+
+        # target is stronger
+        elif(strengthDiff > 0):
+            abs(strengthDiff)
+            if(abs(strengthDiff) <= 10 ):
+                selfPlayer = selfPlayer + .1
+                targetPlayer = targetPlayer - .1
+            elif (abs(strengthDiff) <= 20 ):
+                selfPlayer = selfPlayer + .2
+                targetPlayer = targetPlayer - .2
+            elif(abs(strengthDiff) <= 30 ):
+                selfPlayer = selfPlayer + .3
+                targetPlayer = targetPlayer - .3
+            else:
+                selfPlayer = selfPlayer + .4
+                targetPlayer = targetPlayer - .4
+
+        staminaDiff = self.stamina - target.stamina
+        print(staminaDiff)
+        # self.strength is stronger
+        if(staminaDiff  < 0):
+            if(staminaDiff  <= 10 ):
+                selfPlayer = selfPlayer - .05
+                targetPlayer = targetPlayer + .05
+            elif (staminaDiff  <= 20 ):
+                selfPlayer = selfPlayer - .1
+                targetPlayer = targetPlayer + .1
+            else:
+                selfPlayer = selfPlayer - .15
+                targetPlayer = targetPlayer + .15
+
+        # target is stronger
+        elif(staminaDiff  > 0):
+            abs(strengthDiff)
+            if(abs(staminaDiff ) <= 10 ):
+                selfPlayer = selfPlayer + .05
+                targetPlayer = targetPlayer - .05
+            elif (abs(staminaDiff) <= 20 ):
+                selfPlayer = selfPlayer + .1
+                targetPlayer = targetPlayer - .1
+            else:
+                selfPlayer = selfPlayer + .15
+                targetPlayer = targetPlayer - .15
+                
+        if(selfPlayer < 0 or selfPlayer > 1):
+            if(selfPlayer < 0):
+                selfPlayer = .05
+            if(selfPlayer > 1):
+                selfPlayer = .95
+
+        if(targetPlayer < 0 or targetPlayer > 1):
+            if(targetPlayer < 0):
+                targetPlayer = .05
+            if(targetPlayer > 1):
+                targetPlayer = .95
+
+        probabilities = [selfPlayer, targetPlayer]
+
+        winner = np.random.choice(players, p=probabilities)
+        # Testing: print('{} won! attacker: {}%   target: {}%'.format(winner, round(selfPlayer,4), round(targetPlayer,4)))
+        return winner
+        # Testing: return '{} won! attacker: {}%   target: {}%'.format(winner, round(selfPlayer,4), round(targetPlayer,4))
+
 
 
 

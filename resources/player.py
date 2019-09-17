@@ -2,6 +2,8 @@ from flask_restful import Resource, reqparse
 from models.player  import PlayerModel
 from models.locations import LocationModel
 from flask_jwt import jwt_required, current_identity
+from flask import jsonify
+from werkzeug.security import safe_str_cmp
 
 class PlayerRegister(Resource):
     """ 
@@ -54,7 +56,7 @@ class PlayerRegister(Resource):
         
         # Uses the PlayerRegister function save_to_db() function that uses SQLAlchemys save and commit to register the player
         # to the database
-        player = PlayerModel(data['playerName'], data['secretKey'], 'player', 'alive', 'none', 100, 100)
+        player = PlayerModel(data['playerName'], data['secretKey'], 'player', 'none', 'none', 100, 100)
         player.save_to_db()
         
 
@@ -108,6 +110,7 @@ class Player(Resource):
 
         return {'message': 'Player was not found!'}
 
+
 class PlayerLocation(Resource):
     """This resource will handle game logic when it comes to a player wanting to change location.
 
@@ -152,13 +155,29 @@ class PlayerLocation(Resource):
             return {'message':'Already at that location.'}
 
         try:
+
+            currentLocation = LocationModel.findById(player.locationId)
+            currentLocation.numOfPlayers = currentLocation.numOfPlayers - 1
+
+            
+
             player.locationId = data['locationId']
             player.stamina    = player.stamina - 10
+
+            newLocation = LocationModel.findById(data['locationId'])
+            newLocation.numOfPlayers = newLocation.numOfPlayers + 1
+
+            player.save_to_db()
+            
+            # Save new locations
+            currentLocation.save_to_db()
+            newLocation.save_to_db()
+
             if(player.stamina == 0):
                 player.status = "sleep"
                 player.save_to_db()
                 return {'message': 'You are out of stamina and have fallen asleep!'}
-            player.save_to_db()
+            
         except:
             return {'message': 'Error saving to the DB!'}
 
@@ -183,10 +202,21 @@ class PlayerConfrontation(Resource):
     @jwt_required()
     def post(self):
         data = PlayerConfrontation.parse.parse_args()
-        player = PlayerModel.findByPlayerId(current_identity.id)
+        currentPlayer = PlayerModel.findByPlayerId(current_identity.id)
         enemy = PlayerModel.findByPlayerId(data['player'])
-        confrontation = player.confront(enemy.playerName)
-        return {'message':confrontation}
+        location = LocationModel.findById(currentPlayer.locationId) 
+
+        playerList = []
+        playerCount = 0
+        for player in location.players:
+            if(player.role == 'player' and player.playerName != currentPlayer.playerName):
+                playerCount = playerCount + 1
+                playerList.append(player.json())
+
+        if(playerCount == 0):
+            return {'message': 'Target Selected'}
+        else:
+            return jsonify(playerList)
 
 
 class PlayerAction(Resource):
@@ -203,6 +233,11 @@ class PlayerAction(Resource):
         required=True,
         help='Action is required!'
     )
+    parse.add_argument(
+        'target',
+        type=str,
+        required=False,
+    )
 
 
     @jwt_required()
@@ -213,25 +248,63 @@ class PlayerAction(Resource):
         """
         data = PlayerAction.parse.parse_args()
 
-        
-        if(data['action'] == 'sleep'):
+        if(current_identity.status == 'sleep' and data['action'] != 'wakeup'):
+            return {'message': 'You must be awake to take action!'}
+
+        elif(data['action'] == 'attack'):
+            player = PlayerModel.findByPlayerName(current_identity.playerName)
+            target = PlayerModel.findByPlayerName(data['target'])
+            location = LocationModel.findById(player.locationId)
+
+            if(target.status == 'dead'):
+                return { 'message' : 'target already dead'}
+
+            # p is a player from the list of players in the current location
+            for p in location.players:
+                if(data['target'] == p.playerName):
+                    # once target is found, call confront method from player who attacked
+                    print(player.playerName)
+                    winner = player.confront(p)
+                    if(winner == player.playerName):
+                        target.status = 'dead'
+                        target.save_to_db()  
+                        return { 'message': 'kill' }
+                    else:
+                        player.status = 'dead'
+                        player.save_to_db()
+                        return { 'message': 'dead' }
+                    
+            return {'message': 'target was not in the location'}    
+
+        elif(data['action'] == 'sleep'):
             player = PlayerModel.findByPlayerId(current_identity.id)
             player.stamina = player.stamina + 10
+            player.status = 'sleep'
             player.save_to_db()
             return {'message': 'You decided to sleep: +10 stamina'}
+
+        elif(data['action'] == 'wakeup'):
+            player = PlayerModel.findByPlayerId(current_identity.id)
+            player.status = 'none'
+            player.save_to_db()
+            return {'message': 'You are now awake'}
+
         elif(data['action'] == 'workout'):
+            player = PlayerModel.findByPlayerId(current_identity.id)
+
             if(player.stamina == 0):
                 player.status = "sleep"
                 player.save_to_db()
                 return {'message': 'You are out of stamina and have fallen asleep!'}
 
-            player = PlayerModel.findByPlayerId(current_identity.id)
+            
             player.strength = player.strength + 10
             player.stamina = player.stamina - 10
             player.status = "sleep"
             
             player.save_to_db()
             return {'message': 'You decided to sleep: +10 strength -10 stamina'}
+        
         else:
             return {'message': 'Action is not supported!'}
 
